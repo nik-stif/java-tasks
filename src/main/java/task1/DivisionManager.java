@@ -1,8 +1,7 @@
 package task1;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class DivisionManager {
     private List<Participant> participants;
@@ -20,8 +19,9 @@ public class DivisionManager {
         System.out.println("Сумма на каждого участника: " + averageSum);
         System.out.println();
 
-        Map<String, Double> difference = calculateDifference(averageSum);
-        calculateMoneyTransfer(difference);
+        List<Participant> difference = calculateDifference(averageSum);
+        List<List<Participant>> listUnderpayersAndOverpayers = divideToUnderpayersAndOverpayers(difference);
+        calculateMoneyTransfer(listUnderpayersAndOverpayers.get(0), listUnderpayersAndOverpayers.get(1));
     }
 
     private double calculateTotalSum() {
@@ -32,34 +32,54 @@ public class DivisionManager {
         return totalSum;
     }
 
-    private Map<String, Double> calculateDifference(double averageSum) {
-        Map<String, Double> difference = new HashMap<>();
+    private List<Participant> calculateDifference(double averageSum) {
+        List<Participant> difference = new ArrayList<>();
         for (Participant participant : participants) {
-            difference.put(participant.getName(), participant.getPayment() - averageSum);
+            difference.add(new Participant(participant.getName(), participant.getPayment() - averageSum));
         }
         return difference;
     }
 
-    private void calculateMoneyTransfer(Map<String, Double> difference) {
-        for (String underpayer : difference.keySet()) {
-            while (difference.get(underpayer) < 0) {
-                String overpayer = findOverpayer(difference);
-                double transfer = Math.min(difference.get(underpayer) * (-1), difference.get(overpayer));
+    private List<List<Participant>> divideToUnderpayersAndOverpayers(List<Participant> difference) {
+        List<Participant> underpayers = new ArrayList<>();
+        List<Participant> overpayers = new ArrayList<>();
 
-                System.out.println(underpayer + " отдает " + overpayer + " " + transfer);
-
-                difference.put(underpayer, difference.get(underpayer) + transfer);
-                difference.put(overpayer, difference.get(overpayer) - transfer);
+        for (Participant participant : difference) {
+            if (participant.getPayment() < 0) {
+                underpayers.add(participant);
+            } else if (participant.getPayment() > 0) {
+                overpayers.add(participant);
             }
         }
+
+        List<List<Participant>> result = new ArrayList<>();
+        result.add(underpayers);
+        result.add(overpayers);
+        return result;
     }
 
-    private static String findOverpayer(Map<String, Double> difference) {
-        for (Map.Entry<String, Double> entry : difference.entrySet()) {
-            if (entry.getValue() > 0) {
-                return entry.getKey();
+    private void calculateMoneyTransfer(List<Participant> underpayers, List<Participant> overpayers) {
+        int underpayersIndex = 0;
+        int overpayersIndex = 0;
+
+        while (underpayersIndex < underpayers.size() && overpayersIndex < overpayers.size()) {
+            Participant underpayer = underpayers.get(underpayersIndex);
+            Participant overpayer = overpayers.get(overpayersIndex);
+
+            double transfer = Math.min(underpayer.getPayment() * (-1), overpayer.getPayment());
+
+            System.out.println(underpayer.getName() + " отдает " + overpayer.getName() + " " + transfer);
+
+            underpayer.setPayment(underpayer.getPayment() + transfer);
+            overpayer.setPayment(overpayer.getPayment() - transfer);
+
+            if (underpayer.getPayment() == 0) {
+                underpayersIndex++;
+            }
+
+            if (overpayer.getPayment() == 0) {
+                overpayersIndex++;
             }
         }
-        throw new RuntimeException("Переплат нет, а недоплата все еще существует");
     }
 }

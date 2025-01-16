@@ -16,4 +16,8 @@ public class Participant {
     public double getPayment() {
         return payment;
     }
+
+    public void setPayment(double payment) {
+        this.payment = payment;
+    }
 }
